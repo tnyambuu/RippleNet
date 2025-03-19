@@ -83,7 +83,7 @@ def convert_kg():
     if DATASET == 'movie':
         files.append(open('../data/' + DATASET + '/kg_part1_rehashed.txt', encoding='utf-8'))
         files.append(open('../data/' + DATASET + '/kg_part2_rehashed.txt', encoding='utf-8'))
-    else:
+    elif DATASET == 'tender':
         files.append(open('../data/' + DATASET + '/kg_rehashed.txt', encoding='utf-8'))
 
     for file in files:

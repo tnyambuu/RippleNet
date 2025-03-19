@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 from model import RippleNet
 
-
 def train(args, data_info, show_loss):
     train_data = data_info[0]
     eval_data = data_info[1]
@@ -32,7 +31,7 @@ def train(args, data_info, show_loss):
             test_auc, test_acc = evaluation(sess, args, model, test_data, ripple_set, args.batch_size)
 
             print('epoch %d    train auc: %.4f  acc: %.4f    eval auc: %.4f  acc: %.4f    test auc: %.4f  acc: %.4f'
-                  % (step, train_auc, train_acc, eval_auc, eval_acc, test_auc, test_acc))
+                % (step, train_auc, train_acc, eval_auc, eval_acc, test_auc, test_acc))
 
 
 def get_feed_dict(args, model, data, ripple_set, start, end):
