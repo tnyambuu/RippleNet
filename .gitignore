@@ -106,3 +106,4 @@ data/book/*
 !data/book/kg_rehashed.txt
 data/news/*
 data/tender/*
+src/checkpoints/*

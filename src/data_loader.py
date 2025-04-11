@@ -4,10 +4,16 @@ import numpy as np
 
 
 def load_data(args):
-    train_data, eval_data, test_data, user_history_dict = load_rating(args)
+    # Load ratings, GET n_item
+    train_data, eval_data, test_data, user_history_dict, n_item = load_rating(args)
+    # Load KG
     n_entity, n_relation, kg = load_kg(args)
+    # Get ripple set
     ripple_set = get_ripple_set(args, kg, user_history_dict)
-    return train_data, eval_data, test_data, n_entity, n_relation, ripple_set
+
+    # --- Return all necessary info, including n_item ---
+    # Returns 7 values now
+    return train_data, eval_data, test_data, n_entity, n_relation, ripple_set, n_item
 
 
 def load_rating(args):
@@ -21,9 +27,15 @@ def load_rating(args):
         rating_np = np.loadtxt(rating_file + '.txt', dtype=np.int32)
         np.save(rating_file + '.npy', rating_np)
 
-    # n_user = len(set(rating_np[:, 0]))
-    # n_item = len(set(rating_np[:, 1]))
-    return dataset_split(rating_np)
+    n_item = np.max(rating_np[:, 1]) + 1
+    print(f'n_item calculated from ratings: {n_item}')
+
+    # Pass the full rating_np to dataset_split
+    train_data, eval_data, test_data, user_history_dict = dataset_split(rating_np)
+
+    # --- Return n_item along with other results ---
+    # Returns 5 values now
+    return train_data, eval_data, test_data, user_history_dict, n_item
 
 
 def dataset_split(rating_np):
@@ -38,10 +50,10 @@ def dataset_split(rating_np):
     left = set(range(n_ratings)) - set(eval_indices)
     test_indices = np.random.choice(list(left), size=int(n_ratings * test_ratio), replace=False)
     train_indices = list(left - set(test_indices))
-    # print(len(train_indices), len(eval_indices), len(test_indices))
 
     # traverse training data, only keeping the users with positive ratings
     user_history_dict = dict()
+    # print('train_indices------------->', train_indices)
     for i in train_indices:
         user = rating_np[i][0]
         item = rating_np[i][1]
@@ -54,7 +66,6 @@ def dataset_split(rating_np):
     train_indices = [i for i in train_indices if rating_np[i][0] in user_history_dict]
     eval_indices = [i for i in eval_indices if rating_np[i][0] in user_history_dict]
     test_indices = [i for i in test_indices if rating_np[i][0] in user_history_dict]
-    # print(len(train_indices), len(eval_indices), len(test_indices))
 
     train_data = rating_np[train_indices]
     eval_data = rating_np[eval_indices]
@@ -64,8 +75,8 @@ def dataset_split(rating_np):
 
 
 def load_kg(args):
+    # ... (code from your provided file) ...
     print('reading KG file ...')
-
     # reading kg file
     kg_file = '../data/' + args.dataset + '/kg_final'
     if os.path.exists(kg_file + '.npy'):
@@ -76,10 +87,8 @@ def load_kg(args):
 
     n_entity = len(set(kg_np[:, 0]) | set(kg_np[:, 2]))
     n_relation = len(set(kg_np[:, 1]))
-
     kg = construct_kg(kg_np)
-
-    return n_entity, n_relation, kg
+    return n_entity, n_relation, kg # Returns 3 values
 
 
 def construct_kg(kg_np):
@@ -116,6 +125,9 @@ def get_ripple_set(args, kg, user_history_dict):
             # if the current ripple set of the given user is empty, we simply copy the ripple set of the last hop here
             # this won't happen for h = 0, because only the items that appear in the KG have been selected
             # this only happens on 154 users in Book-Crossing dataset (since both BX dataset and the KG are sparse)
+
+            # print('user------------->', user)
+            # print('memories_h------------->', ripple_set[user])
             if len(memories_h) == 0:
                 ripple_set[user].append(ripple_set[user][-1])
             else:

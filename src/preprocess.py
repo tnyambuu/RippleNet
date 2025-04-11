@@ -1,9 +1,9 @@
 import argparse
 import numpy as np
 
-RATING_FILE_NAME = dict({'movie': 'ratings.dat', 'book': 'BX-Book-Ratings.csv', 'news': 'ratings.txt'})
-SEP = dict({'movie': '::', 'book': ';', 'news': '\t'})
-THRESHOLD = dict({'movie': 4, 'book': 0, 'news': 0})
+RATING_FILE_NAME = dict({'movie': 'ratings.dat', 'book': 'BX-Book-Ratings.csv', 'news': 'ratings.txt', 'tender': 'train_data.txt'})
+SEP = dict({'movie': '::', 'book': ';', 'news': '\t', 'tender': '\t'})
+THRESHOLD = dict({'movie': 4, 'book': 0, 'news': 0, 'tender': 1})
 
 
 def read_item_index_to_entity_id_file():
@@ -13,15 +13,15 @@ def read_item_index_to_entity_id_file():
     for line in open(file, encoding='utf-8').readlines():
         item_index = line.strip().split('\t')[0]
         satori_id = line.strip().split('\t')[1]
-        item_index_old2new[item_index] = i
-        entity_id2index[satori_id] = i
+        item_index_old2new[item_index] = i  # item_to_id[item_old] = i
+        entity_id2index[satori_id] = i # item_to_id[item_new] = i
         i += 1
 
 
 def convert_rating():
     file = '../data/' + DATASET + '/' + RATING_FILE_NAME[DATASET]
 
-    print('reading rating file ...')
+    print('reading rating file ...  ')
     item_set = set(item_index_old2new.values())
     user_pos_ratings = dict()
     user_neg_ratings = dict()
@@ -33,7 +33,7 @@ def convert_rating():
         if DATASET == 'book':
             array = list(map(lambda x: x[1:-1], array))
 
-        item_index_old = array[1]
+        item_index_old = array[1]  # user
         if item_index_old not in item_index_old2new:  # the item is not in the final item set
             continue
         item_index = item_index_old2new[item_index_old]
@@ -54,6 +54,8 @@ def convert_rating():
     writer = open('../data/' + DATASET + '/ratings_final.txt', 'w', encoding='utf-8')
     user_cnt = 0
     user_index_old2new = dict()
+
+    #user_index_old , (hash_index, ....)
     for user_index_old, pos_item_set in user_pos_ratings.items():
         if user_index_old not in user_index_old2new:
             user_index_old2new[user_index_old] = user_cnt
@@ -83,7 +85,7 @@ def convert_kg():
     if DATASET == 'movie':
         files.append(open('../data/' + DATASET + '/kg_part1_rehashed.txt', encoding='utf-8'))
         files.append(open('../data/' + DATASET + '/kg_part2_rehashed.txt', encoding='utf-8'))
-    elif DATASET == 'tender':
+    else:
         files.append(open('../data/' + DATASET + '/kg_rehashed.txt', encoding='utf-8'))
 
     for file in files:

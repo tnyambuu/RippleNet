@@ -19,6 +19,8 @@ parser.add_argument('--item_update_mode', type=str, default='plus_transform',
                     help='how to update item at the end of each hop')
 parser.add_argument('--using_all_hops', type=bool, default=True,
                     help='whether using outputs of all hops or just the last hop when making prediction')
+parser.add_argument('--save_dir', type=str, default='checkpoints/', help='directory to save model checkpoints')
+parser.add_argument('--save_period', type=int, default=5, help='save checkpoint every N epochs')
 
 '''
 # default settings for Book-Crossing

@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from model import RippleNet
+import os
 
 def train(args, data_info, show_loss):
     train_data = data_info[0]
@@ -12,6 +13,14 @@ def train(args, data_info, show_loss):
 
     model = RippleNet(args, n_entity, n_relation)
 
+    # --- Add this section ---
+    saver = tf.train.Saver(max_to_keep=5) # Create a Saver object
+
+    # Create save directory if it doesn't exist
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+    save_path_prefix = os.path.join(args.save_dir, 'model') # Base path for checkpoints
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for step in range(args.n_epoch):
@@ -19,6 +28,7 @@ def train(args, data_info, show_loss):
             np.random.shuffle(train_data)
             start = 0
             while start < train_data.shape[0]:
+                # print("train------------->", ripple_set)
                 _, loss = model.train(
                     sess, get_feed_dict(args, model, train_data, ripple_set, start, start + args.batch_size))
                 start += args.batch_size
@@ -33,6 +43,11 @@ def train(args, data_info, show_loss):
             print('epoch %d    train auc: %.4f  acc: %.4f    eval auc: %.4f  acc: %.4f    test auc: %.4f  acc: %.4f'
                 % (step, train_auc, train_acc, eval_auc, eval_acc, test_auc, test_acc))
 
+            if (step + 1) % args.save_period == 0 or step == args.n_epoch - 1: # Save periodically or on the last epoch
+                print(f"Epoch {(step + 1)}: Saving model checkpoint...")
+                checkpoint_path = saver.save(sess, save_path_prefix, global_step=step + 1)
+                print(f"Model checkpoint saved to {checkpoint_path}")
+
 
 def get_feed_dict(args, model, data, ripple_set, start, end):
     feed_dict = dict()
@@ -42,6 +57,7 @@ def get_feed_dict(args, model, data, ripple_set, start, end):
         feed_dict[model.memories_h[i]] = [ripple_set[user][i][0] for user in data[start:end, 0]]
         feed_dict[model.memories_r[i]] = [ripple_set[user][i][1] for user in data[start:end, 0]]
         feed_dict[model.memories_t[i]] = [ripple_set[user][i][2] for user in data[start:end, 0]]
+
     return feed_dict
 
 
