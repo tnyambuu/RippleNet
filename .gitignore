@@ -95,7 +95,7 @@ ENV/
 
 # self added
 .idea/*
-data/movie/*
+# data/movie/*
 !data/movie/item_index2entity_id_rehashed.txt
 !data/movie/ratings.dat
 !data/movie/kg_part1_rehashed.txt
@@ -105,5 +105,5 @@ data/book/*
 !data/book/BX-Book-Ratings.csv
 !data/book/kg_rehashed.txt
 data/news/*
-data/tender/*
+# data/tender/*
 src/checkpoints/*
