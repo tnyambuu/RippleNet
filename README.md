@@ -41,3 +41,6 @@ $ cd src
 $ python preprocess.py --dataset movie (or --dataset book)
 $ python main.py --dataset movie (note: use -h to check optional arguments)
 ```
+
+### Predicting tender
+$ python predict.py --dataset tender --user_id 100 --load_dir checkpoints/ --dim 64

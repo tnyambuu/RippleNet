@@ -3,14 +3,14 @@ import numpy as np
 import argparse
 import os
 from model import RippleNet
-from data_loader import load_data # Or just load necessary parts
-import heapq # For efficiently getting top N items
+from data_loader import load_data, load_rating
+import heapq
+from neo4j_connection import db_connection, verify_database, close_connection
 
 def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommendations=10):
     """Loads a saved model and predicts top N items for a given user."""
 
-    # 1. Load necessary info
-    n_item = data_info[6] # Get the total number of items from data_info
+    n_item = data_info[6]
     n_entity = data_info[3]
     n_relation = data_info[4]
     ripple_set = data_info[5]
@@ -21,15 +21,15 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
     user_memories_h = []
     user_memories_r = []
     user_memories_t = []
+
     if user_id < len(ripple_set):
         for i in range(args.n_hop):
-            # Ensure correct padding/structure if needed based on how ripple_set is built
             user_memories_h.append(ripple_set[user_id][i][0])
             user_memories_r.append(ripple_set[user_id][i][1])
             user_memories_t.append(ripple_set[user_id][i][2])
     else:
         print(f"Error: User ID {user_id} not found in ripple_set.")
-        return None # Indicate failure
+        return None
 
     # --- Define Candidate Items ---
     # Option 1: Predict for ALL items (can be slow for large N_item)
@@ -37,11 +37,9 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
 
     # Option 2: Predict for items the user hasn't interacted with positively
     # (Requires loading user history)
-    # user_history_dict = load_user_history(args) # Need a function for this
+    # _, _, _, user_history_dict, n_item = load_rating(args)
     # positive_items = set(user_history_dict.get(user_id, []))
     # candidate_items = [item for item in range(n_item) if item not in positive_items]
-
-    # Option 3: Predict for a specific subset if needed
 
     if not candidate_items:
         print("No candidate items to predict for.")
@@ -54,10 +52,9 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
     print("Model graph built.")
     saver = tf.train.Saver()
 
-    item_scores = {} # Dictionary to store {item_id: score}
+    item_scores = {}
 
     with tf.Session() as sess:
-        # Restore model (same logic as before)
         print(f"Attempting to restore model from: {checkpoint_dir}")
         ckpt_state = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt_state and ckpt_state.model_checkpoint_path:
@@ -73,25 +70,22 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
             return None
 
         # --- Predict for items in batches ---
-        batch_size = args.batch_size # Use the batch size argument
+        batch_size = args.batch_size
         start_index = 0
         while start_index < len(candidate_items):
             end_index = min(start_index + batch_size, len(candidate_items))
             batch_item_ids = candidate_items[start_index:end_index]
 
-            # Prepare feed dict for the batch
             feed_dict = {
                 model.items: batch_item_ids,
                 model.labels: [0] * len(batch_item_ids) # Dummy labels
             }
-            # Add user's ripple set data - REPLICATE for each item in batch
+
             for i in range(args.n_hop):
                 feed_dict[model.memories_h[i]] = [user_memories_h[i]] * len(batch_item_ids)
                 feed_dict[model.memories_r[i]] = [user_memories_r[i]] * len(batch_item_ids)
                 feed_dict[model.memories_t[i]] = [user_memories_t[i]] * len(batch_item_ids)
 
-            # Run inference for the batch
-            # Use model.scores_normalized or model.scores based on previous debugging
             batch_scores = sess.run(model.scores_normalized, feed_dict=feed_dict) # Assuming this gives probabilities
 
             # Handle potential scalar output if batch size is 1
@@ -112,14 +106,72 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
         print("No scores were calculated.")
         return []
 
-    # Use heapq for efficiency with large number of items
-    # Finds the N items with the largest scores
-    top_n_items = heapq.nlargest(n_recommendations, item_scores.items(), key=lambda item: item[1])
-    # top_n_items will be a list of (item_id, score) tuples
+    # user_history = set()
 
-    print(f"\nTop {n_recommendations} recommended items for user {user_id}:")
+    # train_data, eval_data, test_data, user_history_dict, n_item = load_rating(args)
+
+    # if user_id in user_history_dict: # Use the history dict created by data_loader
+    #     user_history = set(user_history_dict[user_id])
+
+    # filtered_item_scores = {
+    #     item_id: score
+    #     for item_id, score in item_scores.items()
+    #     if item_id not in user_history
+    # }
+
+    driver, session = db_connection("neo4j")
+    verify_database(session)
+
+    item_to_old = dict()
+    user_to_old = dict()
+
+    with open("../data/tender/item_to_id_v1.txt", "r") as f:
+        for line in f:
+            line = line.split("\t")
+
+            old_id = int(line[0])
+            new_id = int(line[1])
+
+            item_to_old[new_id] = old_id
+
+
+    with open("../data/tender/user_to_id_v1.txt", "r") as f:
+        for line in f:
+            line = line.split("\t")
+
+            old_id = int(line[0])
+            new_id = int(line[1])
+
+            user_to_old[new_id] = old_id
+
+    top_n_items = heapq.nlargest(n_recommendations, item_scores.items(), key=lambda item: item[1])
+
+    print(f"\nTop {n_recommendations} recommended items for user_id {user_id} user_old_id {user_to_old[user_id]}:")
+
+    old_user_id = user_to_old[user_id]
+    result_user = session.run(f"MATCH (n:Оролцогч)<-[r:АВАХ]-(y:ҮйлАжиллагааныЧиглэл) WHERE id(n) = {old_user_id} RETURN n.нэр as name, y.нэр as type")
+
+    user_name = None
+    type_name = None
+
+    for line in result_user:
+        user_name = line["name"]
+        type_name = line["type"]
+
+    print(f"\n  User ID: {user_id}, User name: {user_name} Type name: {type_name} \n")
+
     for item_id, score in top_n_items:
-        print(f"  Item ID: {item_id}, Score: {score:.4f}")
+        old_item_id = item_to_old[item_id]
+        result = session.run(f"MATCH (n:Урилга) WHERE id(n) = {old_item_id} RETURN n.нэр as name")
+
+        tender_name = None
+        for line in result:
+            tender_name = line["name"]
+
+
+        print(f"\n  Item ID: {item_id}, Old ID: {old_item_id}, Tender name: {tender_name} \n")
+
+    close_connection(driver, session)
 
     return top_n_items
 
