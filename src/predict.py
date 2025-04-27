@@ -6,6 +6,7 @@ from model import RippleNet
 from data_loader import load_data, load_rating
 import heapq
 from neo4j_connection import db_connection, verify_database, close_connection
+from train import evaluation
 
 def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommendations=10):
     """Loads a saved model and predicts top N items for a given user."""
@@ -182,6 +183,7 @@ def predict(args, data_info, checkpoint_dir):
     n_entity = data_info[3]
     n_relation = data_info[4]
     ripple_set = data_info[5]
+    test_data = data_info[2]
 
     # --- Prepare Input Data for Prediction ---
 
@@ -244,6 +246,11 @@ def predict(args, data_info, checkpoint_dir):
             feed_dict[model.memories_t[i]] = [user_memories_t[i]]
 
 
+        test_auc, test_acc, test_p, test_r, test_f1 = evaluation(sess, args, model, test_data, ripple_set, 1024, 10)
+
+        print(f'TEST\tAUC: {test_auc:.4f}\tACC: {test_acc:.4f}\tP@10: {test_p:.4f}\tR@10: {test_r:.4f}\tNDCG@10: {test_f1:.4f}\n')
+
+
         scores = sess.run(model.scores, feed_dict=feed_dict)
 
         # Check the shape and type
@@ -293,4 +300,4 @@ if __name__ == '__main__':
 
     predict(args, data_info, args.load_dir)
 
-    top_items = predict_top_n_for_user(args, data_info, args.load_dir, args.user_id, args.top_n)
+    # top_items = predict_top_n_for_user(args, data_info, args.load_dir, args.user_id, args.top_n)

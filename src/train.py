@@ -81,15 +81,15 @@ def train(args, data_info, show_loss):
 
             # evaluation
             print("\n--- Evaluating Training Set ---")
-            train_auc, train_acc, train_p, train_r, train_f1 = evaluation(sess, args, model, train_data, ripple_set, args.batch_size, k_value=10)
+            train_auc, train_acc, train_p, train_r, train_f1 = evaluation(sess, args, model, train_data, ripple_set, args.batch_size, k_value=1)
             print("\n--- Evaluating Evaluation Set ---")
-            eval_auc, eval_acc, eval_p, eval_r, eval_f1 = evaluation(sess, args, model, eval_data, ripple_set, args.batch_size, k_value=10)
+            eval_auc, eval_acc, eval_p, eval_r, eval_f1 = evaluation(sess, args, model, eval_data, ripple_set, args.batch_size, k_value=1)
             print("\n--- Evaluating Test Set ---")
-            test_auc, test_acc, test_p, test_r, test_f1 = evaluation(sess, args, model, test_data, ripple_set, args.batch_size, k_value=10)
+            test_auc, test_acc, test_p, test_r, test_f1 = evaluation(sess, args, model, test_data, ripple_set, args.batch_size, k_value=1)
 
             print('epoch %d    train auc: %.4f  acc: %.4f    eval auc: %.4f  acc: %.4f    test auc: %.4f  acc: %.4f'
                 % (step, train_auc, train_acc, eval_auc, eval_acc, test_auc, test_acc))
-            
+
             print(f'\n--- Epoch {step:d} Results ---')
             print(f'TRAIN\tAUC: {train_auc:.4f}\tACC: {train_acc:.4f}\tP@10: {train_p:.4f}\tR@10: {train_r:.4f}\tNDCG@10: {train_f1:.4f}')
             print(f'EVAL\tAUC: {eval_auc:.4f}\tACC: {eval_acc:.4f}\tP@10: {eval_p:.4f}\tR@10: {eval_r:.4f}\tNDCG@10: {eval_f1:.4f}')
@@ -197,9 +197,9 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
 
         # Handle scalar output just in case batch size was 1 somehow
         if not isinstance(pred_scores, np.ndarray):
-             pred_scores = np.array([pred_scores])
+            pred_scores = np.array([pred_scores])
         elif pred_scores.ndim == 0:
-             pred_scores = np.array([pred_scores.item()])
+            pred_scores = np.array([pred_scores.item()])
 
         if len(pred_scores) != num_items_for_user:
             print(f"Warning: Score length mismatch for user {user_id} ({len(pred_scores)} vs {num_items_for_user}). Skipping user.")
@@ -229,7 +229,7 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
 
         processed_users += 1
         if processed_users % 100 == 0:
-             print(f"Evaluated {processed_users}/{len(unique_users)} users...", end='\r')
+            print(f"Evaluated {processed_users}/{len(unique_users)} users...", end='\r')
 
 
     print(f"\nFinished evaluation for {processed_users} users.")
