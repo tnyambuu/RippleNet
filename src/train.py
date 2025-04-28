@@ -23,6 +23,14 @@ def recall_at_k(true_positives, top_k_items, k):
     hits = len(true_positives.intersection(set(top_k_items)))
     return hits / len(true_positives)
 
+
+def f1_at_k(precision_k, recall_k):
+    """Calculates F1@K from Precision@K and Recall@K."""
+    # Harmonic mean: Returns 0 if either P or R is 0
+    if precision_k + recall_k == 0:
+        return 0.0
+    return 2 * (precision_k * recall_k) / (precision_k + recall_k)
+
 def ndcg_at_k(true_positives, top_k_items_with_scores, k):
     """Calculates NDCG@K."""
     dcg = 0.0
@@ -81,19 +89,19 @@ def train(args, data_info, show_loss):
 
             # evaluation
             print("\n--- Evaluating Training Set ---")
-            train_auc, train_acc, train_p, train_r, train_f1 = evaluation(sess, args, model, train_data, ripple_set, args.batch_size, k_value=1)
+            train_auc, train_acc, train_p, train_r, train_f1, train_ndcg = evaluation(sess, args, model, train_data, ripple_set, args.batch_size, k_value=10)
             print("\n--- Evaluating Evaluation Set ---")
-            eval_auc, eval_acc, eval_p, eval_r, eval_f1 = evaluation(sess, args, model, eval_data, ripple_set, args.batch_size, k_value=1)
+            eval_auc, eval_acc, eval_p, eval_r, eval_f1, eval_ndcg = evaluation(sess, args, model, eval_data, ripple_set, args.batch_size, k_value=10)
             print("\n--- Evaluating Test Set ---")
-            test_auc, test_acc, test_p, test_r, test_f1 = evaluation(sess, args, model, test_data, ripple_set, args.batch_size, k_value=1)
+            test_auc, test_acc, test_p, test_r, test_f1, test_ndcg = evaluation(sess, args, model, test_data, ripple_set, args.batch_size, k_value=10)
 
             print('epoch %d    train auc: %.4f  acc: %.4f    eval auc: %.4f  acc: %.4f    test auc: %.4f  acc: %.4f'
                 % (step, train_auc, train_acc, eval_auc, eval_acc, test_auc, test_acc))
 
             print(f'\n--- Epoch {step:d} Results ---')
-            print(f'TRAIN\tAUC: {train_auc:.4f}\tACC: {train_acc:.4f}\tP@10: {train_p:.4f}\tR@10: {train_r:.4f}\tNDCG@10: {train_f1:.4f}')
-            print(f'EVAL\tAUC: {eval_auc:.4f}\tACC: {eval_acc:.4f}\tP@10: {eval_p:.4f}\tR@10: {eval_r:.4f}\tNDCG@10: {eval_f1:.4f}')
-            print(f'TEST\tAUC: {test_auc:.4f}\tACC: {test_acc:.4f}\tP@10: {test_p:.4f}\tR@10: {test_r:.4f}\tNDCG@10: {test_f1:.4f}\n')
+            print(f'TRAIN\tAUC: {train_auc:.4f} ACC: {train_acc:.4f} P@10: {train_p:.4f} R@10: {train_r:.4f} F1@10: {train_f1:.4f} NDCG@10: {train_ndcg:.4f}')
+            print(f'EVAL\tAUC: {eval_auc:.4f} ACC: {eval_acc:.4f} P@10: {eval_p:.4f} R@10: {eval_r:.4f} F1@10: {eval_f1:.4f} NDCG@10: {eval_ndcg:.4f}')
+            print(f'TEST\tAUC: {test_auc:.4f} ACC: {test_acc:.4f} P@10: {test_p:.4f} R@10: {test_r:.4f} F1@10: {test_f1:.4f} NDCG@10: {test_ndcg:.4f}\n')
 
             if (step + 1) % args.save_period == 0 or step == args.n_epoch - 1: # Save periodically or on the last epoch
                 print(f"Epoch {(step + 1)}: Saving model checkpoint...")
@@ -136,6 +144,7 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
     all_pred_scores = []
     precision_list = []
     recall_list = []
+    f1_list = []
     ndcg_list = []
 
     processed_users = 0
@@ -223,8 +232,15 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
 
 
         # Calculate metrics
-        precision_list.append(precision_at_k(true_positive_items, top_k_items, k_value))
-        recall_list.append(recall_at_k(true_positive_items, top_k_items, k_value))
+
+        precision_k = precision_at_k(true_positive_items, top_k_items, k_value)
+        recall_k = recall_at_k(true_positive_items, top_k_items, k_value)
+        f1_k = f1_at_k(precision_k, recall_k)
+
+
+        precision_list.append(precision_k)
+        recall_list.append(recall_k)
+        f1_list.append(f1_k)
         ndcg_list.append(ndcg_at_k(true_positive_items, top_k_items_with_scores, k_value))
 
         processed_users += 1
@@ -252,7 +268,8 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
     # Average Rank Metrics
     avg_precision = np.mean(precision_list) if precision_list else 0.0
     avg_recall = np.mean(recall_list) if recall_list else 0.0
+    avg_f1 = np.mean(f1_list) if f1_list else 0.0
     avg_ndcg = np.mean(ndcg_list) if ndcg_list else 0.0
 
     # Return all metrics
-    return final_auc, final_acc, avg_precision, avg_recall, avg_ndcg
+    return final_auc, final_acc, avg_precision, avg_recall, avg_f1, avg_ndcg
