@@ -107,3 +107,5 @@ data/book/*
 data/news/*
 # data/tender/*
 src/checkpoints/*
+src/checkpoints_movie/*
+src/checkpoints_tender_v1/*

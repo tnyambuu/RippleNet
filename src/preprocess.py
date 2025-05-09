@@ -1,9 +1,9 @@
 import argparse
 import numpy as np
 
-RATING_FILE_NAME = dict({'movie': 'ratings.dat', 'book': 'BX-Book-Ratings.csv', 'news': 'ratings.txt', 'tender': 'train_data.txt'})
-SEP = dict({'movie': '::', 'book': ';', 'news': '\t', 'tender': '\t'})
-THRESHOLD = dict({'movie': 4, 'book': 0, 'news': 0, 'tender': 1})
+RATING_FILE_NAME = dict({'movie': 'ratings.dat', 'book': 'BX-Book-Ratings.csv', 'news': 'ratings.txt', 'tender': 'train_data.txt', 'tender_v1': 'KG_train_data_v2.txt'})
+SEP = dict({'movie': '::', 'book': ';', 'news': '\t', 'tender': '\t', 'tender_v1': '::'})
+THRESHOLD = dict({'movie': 4, 'book': 0, 'news': 0, 'tender': 1, 'tender_v1': 1})
 
 
 def read_item_index_to_entity_id_file():

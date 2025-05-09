@@ -63,6 +63,10 @@ def train(args, data_info, show_loss):
     n_relation = data_info[4]
     ripple_set = data_info[5]
 
+    print("n_entity: ", n_entity)
+    print("n_relation: ", n_relation)
+    print("rippleSet: ", len(ripple_set))
+
     model = RippleNet(args, n_entity, n_relation)
 
     # --- Add this section ---

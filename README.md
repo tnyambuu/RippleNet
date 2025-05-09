@@ -40,7 +40,16 @@ The code has been tested running under Python 3.6.5, with the following packages
 $ cd src
 $ python preprocess.py --dataset movie (or --dataset book)
 $ python main.py --dataset movie (note: use -h to check optional arguments)
+
+$python main.py --dataset tender --kge_weight 0.03 --lr 0.009 --dim 64
 ```
 
 ### Predicting tender
-$ python predict.py --dataset tender --user_id 100 --load_dir checkpoints/ --dim 64
+```
+$ python predict.py --dataset tender --load_dir checkpoints/ --dim 64
+```
+
+### training tender_v1
+```
+$ python main.py --dataset tender --kge_weight 0.03 --lr 0.009 --dim 64
+```

@@ -126,7 +126,7 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
     item_to_old = dict()
     user_to_old = dict()
 
-    with open("../data/tender/item_to_id_v1.txt", "r") as f:
+    with open("../data/tender_v1/KG_item_to_id.txt", "r") as f:
         for line in f:
             line = line.split("\t")
 
@@ -136,7 +136,7 @@ def predict_top_n_for_user(args, data_info, checkpoint_dir, user_id, n_recommend
             item_to_old[new_id] = old_id
 
 
-    with open("../data/tender/user_to_id_v1.txt", "r") as f:
+    with open("../data/tender_v1/KG_user_to_id.txt", "r") as f:
         for line in f:
             line = line.split("\t")
 
@@ -189,6 +189,7 @@ def predict(args, data_info, checkpoint_dir):
 
     user_id_to_predict = 0
     item_id_to_predict = 10
+    k_prediction = args.top_n # Number of top items to recommend
 
     # You need the ripple set for this user
     user_memories_h = []
@@ -246,9 +247,9 @@ def predict(args, data_info, checkpoint_dir):
             feed_dict[model.memories_t[i]] = [user_memories_t[i]]
 
 
-        test_auc, test_acc, test_p, test_r, test_f1 = evaluation(sess, args, model, test_data, ripple_set, 1024, 10)
+        test_auc, test_acc, test_p, test_r, test_f1, test_ndcg = evaluation(sess, args, model, test_data, ripple_set, 1024, k_prediction)
 
-        print(f'TEST\tAUC: {test_auc:.4f}\tACC: {test_acc:.4f}\tP@10: {test_p:.4f}\tR@10: {test_r:.4f}\tNDCG@10: {test_f1:.4f}\n')
+        print(f'TEST\tAUC: {test_auc:.4f}\tACC: {test_acc:.4f}\tP@{k_prediction}: {test_p:.4f}\tR@{k_prediction}: {test_r:.4f}\tF1@{k_prediction}: {test_f1:.4f}\tNDCG@{k_prediction}: {test_f1:.4f}\n')
 
 
         scores = sess.run(model.scores, feed_dict=feed_dict)
