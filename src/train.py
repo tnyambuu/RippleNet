@@ -5,6 +5,7 @@ import os
 import math
 from collections import defaultdict
 from sklearn.metrics import roc_auc_score, accuracy_score
+from neo4j_connection import db_connection, verify_database, close_connection
 
 
 def precision_at_k(true_positives, top_k_items, k):
@@ -12,6 +13,12 @@ def precision_at_k(true_positives, top_k_items, k):
     if not top_k_items:
         return 0.0
     hits = len(true_positives.intersection(set(top_k_items)))
+
+    # print("true_positives: ", true_positives.intersection(set(top_k_items)))
+    # print("top_k_items: ", top_k_items)
+    # print("k: ", k)
+
+    # print("hit: ", hits)
     return hits / k
 
 def recall_at_k(true_positives, top_k_items, k):
@@ -63,6 +70,10 @@ def train(args, data_info, show_loss):
     n_relation = data_info[4]
     ripple_set = data_info[5]
 
+    print("n_entity: ", n_entity)
+    print("n_relation: ", n_relation)
+    print("rippleSet: ", len(ripple_set))
+
     model = RippleNet(args, n_entity, n_relation)
 
     # --- Add this section ---
@@ -89,11 +100,11 @@ def train(args, data_info, show_loss):
 
             # evaluation
             print("\n--- Evaluating Training Set ---")
-            train_auc, train_acc, train_p, train_r, train_f1, train_ndcg = evaluation(sess, args, model, train_data, ripple_set, args.batch_size, k_value=10)
+            train_auc, train_acc, train_p, train_r, train_f1, train_ndcg = evaluation(sess, args, model, train_data, ripple_set, args.batch_size, k_value=100)
             print("\n--- Evaluating Evaluation Set ---")
-            eval_auc, eval_acc, eval_p, eval_r, eval_f1, eval_ndcg = evaluation(sess, args, model, eval_data, ripple_set, args.batch_size, k_value=10)
+            eval_auc, eval_acc, eval_p, eval_r, eval_f1, eval_ndcg = evaluation(sess, args, model, eval_data, ripple_set, args.batch_size, k_value=100)
             print("\n--- Evaluating Test Set ---")
-            test_auc, test_acc, test_p, test_r, test_f1, test_ndcg = evaluation(sess, args, model, test_data, ripple_set, args.batch_size, k_value=10)
+            test_auc, test_acc, test_p, test_r, test_f1, test_ndcg = evaluation(sess, args, model, test_data, ripple_set, args.batch_size, k_value=100)
 
             print('epoch %d    train auc: %.4f  acc: %.4f    eval auc: %.4f  acc: %.4f    test auc: %.4f  acc: %.4f'
                 % (step, train_auc, train_acc, eval_auc, eval_acc, test_auc, test_acc))
@@ -133,7 +144,11 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
     unique_users = sorted(list(set(data[:, 0]))) # Get unique user IDs
     for i in range(data.shape[0]):
         user, item, label = data[i]
+        # if (user == 20):
+            # print("user: ", item)
         user_item_ratings[user].append((item, label))
+
+    # print(unique_users)
 
     if not unique_users:
         print("Warning: No users found in the evaluation data.")
@@ -156,6 +171,7 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
         if not user_data: continue # Skip if user somehow has no items in this set
 
         items_for_user = np.array([d[0] for d in user_data])
+        # print(user_data)
         labels_for_user = np.array([d[1] for d in user_data])
 
         # Identify true positive items for this user IN THIS DATASET SPLIT
@@ -233,6 +249,7 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
 
         # Calculate metrics
 
+        # print(f"User {user_id}")
         precision_k = precision_at_k(true_positive_items, top_k_items, k_value)
         recall_k = recall_at_k(true_positive_items, top_k_items, k_value)
         f1_k = f1_at_k(precision_k, recall_k)
@@ -270,6 +287,61 @@ def evaluation(sess, args, model, data, ripple_set, batch_size, k_value):
     avg_recall = np.mean(recall_list) if recall_list else 0.0
     avg_f1 = np.mean(f1_list) if f1_list else 0.0
     avg_ndcg = np.mean(ndcg_list) if ndcg_list else 0.0
+
+
+    # driver, session = db_connection("neo4j")
+    # verify_database(session)
+
+    # item_to_old = dict()
+    # user_to_old = dict()
+
+    # with open("../data/tender_v1/KG_item_to_id.txt", "r") as f:
+    #     for line in f:
+    #         line = line.split("\t")
+
+    #         old_id = int(line[0])
+    #         new_id = int(line[1])
+
+    #         item_to_old[new_id] = old_id
+
+
+    # with open("../data/tender_v1/KG_user_to_id.txt", "r") as f:
+    #     for line in f:
+    #         line = line.split("\t")
+
+    #         old_id = int(line[0])
+    #         new_id = int(line[1])
+
+    #         user_to_old[new_id] = old_id
+
+    # # top_n_items = heapq.nlargest(n_recommendations, item_scores.items(), key=lambda item: item[1])
+
+    # print(f"\nTop {k_value} recommended items for user_id {user_id} user_old_id {user_to_old[user_id]}:")
+
+    # old_user_id = user_to_old[user_id]
+    # result_user = session.run(f"MATCH (n:Оролцогч)<-[r:АВАХ]-(y:ҮйлАжиллагааныЧиглэл) WHERE id(n) = {old_user_id} RETURN n.нэр as name, y.нэр as type")
+
+    # user_name = None
+    # type_name = None
+
+    # for line in result_user:
+    #     user_name = line["name"]
+    #     type_name = line["type"]
+
+    # print(f"\n  User ID: {user_id}, User name: {user_name} Type name: {type_name} \n")
+
+    # for item_id, score in top_k_items_with_scores:
+    #     old_item_id = item_to_old[item_id]
+    #     result = session.run(f"MATCH (n:Урилга) WHERE id(n) = {old_item_id} RETURN n.нэр as name")
+
+    #     tender_name = None
+    #     for line in result:
+    #         tender_name = line["name"]
+
+
+    #     print(f"\n  Item ID: {item_id}, Old ID: {old_item_id}, Tender name: {tender_name} \n")
+
+    # close_connection(driver, session)
 
     # Return all metrics
     return final_auc, final_acc, avg_precision, avg_recall, avg_f1, avg_ndcg

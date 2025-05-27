@@ -23,24 +23,37 @@ A PyTorch re-implementation of RippleNet by Qibin Chen et al. is [here](https://
   - `movie/`
     - `item_index2entity_id.txt`: the mapping from item indices in the raw rating file to entity IDs in the KG;
     - `kg_part1.txt` and `kg_part2.txt`: knowledge graph file;
-    - `ratrings.dat`: raw rating file of MovieLens-1M;
+    - `ratings.dat`: raw rating file of MovieLens-1M;
+  - `tender/`
+    - `item_index2entity_id.txt`: the mapping from item indices in the raw rating file to entity IDs in the KG;
+    - `kg_rehashed.txt`: Мэдлэгийн графын гурвалуудаар задласан файл;
+    - `train_data.txt`: Тендерийн өгөгдөл;
 - `src/`: implementations of RippleNet.
 
 
 
-### Required packages
-The code has been tested running under Python 3.6.5, with the following packages installed (along with their dependencies):
-- tensorflow-gpu == 1.4.0
-- numpy == 1.14.5
-- sklearn == 0.19.1
+### Суулгах сангууд
+RippleNet нь Python 3.7.0 хувилбартай хослож ажилладаг тул Python 3.7.0-г татаж авч дараах командаар сангуудыг суулгана.
 
+```
+pip install -r requirements.txt
+```
 
-### Running the code
+### Шинээр нэмсэн функцууд
+- RippleNet дээр сургасан моделыг хадгалдаг функц байхгүй тул нэмэлтээр хадгалдаг функц нэмсэн. Моделыг .\src\checkpoints дотор хадгалдаг уг зам дээр хадгалдаг.
+- Сургалтын үе шатанд л моделын үзүүлсэн үр дүнг мэдэх боломжтой байсныг моделыг хадгалдаг функц нэмж өгснөөр хүссэн үедээ гаргаж ирэх боломжтой болсон.
+- Зөвхөн CTR prediction буюу хэрэглэгчийн тухайн зүйл дээр дарах магадлалын acc, auc тооцдог байсан дээр нэмж санал болгох системийн үнэлгээний арга top@k-н precision, recall аргуудыг нэмж өгсөн.
+
+### Оролтын өгөгдлийг боловсруулж сургалтыг хийх код
 ```
 $ cd src
-$ python preprocess.py --dataset movie (or --dataset book)
-$ python main.py --dataset movie (note: use -h to check optional arguments)
+$ python preprocess.py --dataset movie (or --dataset book, tender)
+$ python main.py --dataset movie
 ```
 
-### Predicting tender
-$ python predict.py --dataset tender --user_id 100 --load_dir checkpoints/ --dim 64
+### Хадгалсан модел дээр үнэлгээ хийх
+
+```
+$ python predict.py --dataset tender --load_dir checkpoints/
+```
+
